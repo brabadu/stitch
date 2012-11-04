@@ -60,6 +60,9 @@ exports.Package = class Package
       result = """
         (function(/*! Stitch !*/) {
           if (!this.#{@identifier}) {
+            this.DNA = {};
+            this.DNA.protocols_impl = {};
+            this.DNA.protocols = {};
             var modules = {}, cache = {}, require = function(name, root) {
               var path = expand(root, name), module = cache[path], fn;
               if (module) {
@@ -102,8 +105,24 @@ exports.Package = class Package
               return require(name, '');
             }
             this.#{@identifier}.define = function(bundle) {
-              for (var key in bundle)
+              for (var key in bundle){
                 modules[key] = bundle[key];
+                var mod = {};
+                bundle[key]({}, require, mod)
+                if(mod.hasOwnProperty('register_protocol'))
+                    for(var protocol_name in mod.register_protocol)
+                        this.DNA.protocols[protocol_name] = mod.register_protocol[protocol_name];
+                }
+                for (var m in modules) {
+                    var mod = {};
+                    modules[m]({}, require, mod);
+                    if(mod.hasOwnProperty('register_protocol_impl'))
+                        for(var protocol in mod.register_protocol_impl){
+                            if (!this.DNA.protocols.hasOwnProperty(protocol))
+                                throw('implementation of ' + protocol + 'was not found in DNA.protocols')
+                            this.DNA.protocols_impl[protocol] = mod.register_protocol_impl[protocol]
+                            }
+                    }
             };
           }
           return this.#{@identifier}.define;
@@ -234,7 +253,6 @@ exports.Package = class Package
         files.push filename
       else
         callback err, files.sort()
-
 
 exports.createPackage = (config) ->
   new Package config
