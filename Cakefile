@@ -25,12 +25,12 @@ task 'cafebuild', 'test compiled source', ->
     fs = require 'fs'
 
     p = stitch.createPackage(
-        paths:['../stitch_test/coffee']
+        paths:['./stitch_test/coffee']
     )
 
     p.compile (err, source) ->
         fs.writeFile(
-            '../stitch_test/public/result.js'
+            './stitch_test/public/result.js'
             source
             (err) ->
                 if err
