@@ -60,9 +60,6 @@ exports.Package = class Package
       result = """
         (function(/*! Stitch !*/) {
           if (!this.#{@identifier}) {
-            this.DNA = {};
-            this.DNA.protocols_impl = {};
-            this.DNA.protocols = {};
             var modules = {}, cache = {}, require = function(name, root) {
               var path = expand(root, name), module = cache[path], fn;
               if (module) {
@@ -74,6 +71,7 @@ exports.Package = class Package
                   fn(module.exports, function(name) {
                     return require(name, dirname(path));
                   }, module);
+
                   return module.exports;
                 } catch (err) {
                   delete cache[path];
@@ -109,20 +107,16 @@ exports.Package = class Package
                 modules[key] = bundle[key];
                 var mod = {};
                 bundle[key]({}, require, mod)
-                if(mod.hasOwnProperty('register_protocol'))
-                    for(var protocol_name in mod.register_protocol)
-                        this.DNA.protocols[protocol_name] = mod.register_protocol[protocol_name];
+
+                if(mod.hasOwnProperty('extra_exports')) {
+                  if(callable? mod.extra_exports) {
+                    mod.extra_exports();
+                  }
                 }
-                for (var m in modules) {
-                    var mod = {};
-                    modules[m]({}, require, mod);
-                    if(mod.hasOwnProperty('register_protocol_impl'))
-                        for(var protocol in mod.register_protocol_impl){
-                            if (!this.DNA.protocols.hasOwnProperty(protocol))
-                                throw('implementation of ' + protocol + 'was not found in DNA.protocols')
-                            this.DNA.protocols_impl[protocol] = mod.register_protocol_impl[protocol]
-                            }
-                    }
+              }
+              for (var m in modules) {
+                var mod = {};
+                modules[m]({}, require, mod);
             };
           }
           return this.#{@identifier}.define;
